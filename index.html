@@ -13,11 +13,14 @@
       --magenta: #d946ef;
     }
 
-    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
 
     body {
-      width: 100vw;
-      height: 100vh;
       overflow: hidden;
       background: #000;
       font-family: 'Tajawal', sans-serif;
@@ -27,21 +30,23 @@
     /* ── Spline BG ─────────────────────────────── */
     .spline-bg {
       position: fixed;
-      inset: 0;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 0;
       pointer-events: none;
+      transform: translateZ(0);
     }
-
     .spline-bg iframe {
       width: 100%; height: 100%;
       border: none; display: block;
+      transform: translateZ(0);
     }
 
     /* ── Page ─────────────────────────────────── */
     .page {
       position: relative;
       z-index: 10;
-      width: 100vw;
+      width: 100%;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -49,107 +54,255 @@
 
     /* ── NAV ──────────────────────────────────── */
     nav {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 2vh 3.5vw;
-      width: 100%;
-      /* subtle top glass bar like reference */
-      background: rgba(0,0,0,0.18);
+      padding: 16px 40px;
+      background: rgba(0,0,0,0.2);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0;
     }
 
+    /* Logo — right side in RTL */
     .logo img {
-      height: clamp(70px, 9vh, 110px);
-      filter: drop-shadow(0 0 16px rgba(168,85,247,.8));
+      height: 60px;
+      display: block;
+      mix-blend-mode: lighten;
+      filter: drop-shadow(0 0 14px rgba(168,85,247,.8));
     }
 
+    /* Button + links — left side in RTL */
     .nav-left {
       display: flex;
       align-items: center;
-      gap: clamp(16px, 2vw, 36px);
+      gap: 28px;
+      /* row-reverse so button is visually leftmost */
       flex-direction: row-reverse;
     }
 
     .nav-links {
       display: flex;
-      gap: clamp(20px, 2.5vw, 44px);
+      gap: 32px;
       list-style: none;
     }
-
     .nav-links a {
-      color: rgba(255,255,255,.82);
+      color: rgba(255,255,255,.85);
       text-decoration: none;
+      font-size: 1.05rem;
       font-weight: 700;
+      white-space: nowrap;
       position: relative;
+      transition: color .25s;
     }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; right: 0;
+      width: 0; height: 2px;
+      background: linear-gradient(90deg, var(--purple), var(--magenta));
+      transition: width .3s ease;
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-links a:hover::after { width: 100%; }
 
+    /* ── BUTTON ───────────────────────────────── */
     .btn-join {
+      position: relative;
       padding: 12px 30px;
-      border-radius: 50px;
       border: none;
-      background: linear-gradient(135deg, var(--purple), var(--magenta));
-      font-weight: 900;
+      border-radius: 50px;
       cursor: pointer;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: #0a0014;
+      overflow: hidden;
+      outline: none;
+      flex-shrink: 0;
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease;
+      box-shadow: 0 0 22px rgba(168,85,247,.5);
     }
+    .btn-join::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--purple) 0%, var(--magenta) 100%);
+      z-index: 0;
+    }
+    /* Silver shimmer */
+    .btn-join::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255,255,255,0) 30%,
+        rgba(230,215,255,.9) 46%,
+        rgba(255,255,255,1) 52%,
+        rgba(230,215,255,.9) 58%,
+        rgba(255,255,255,0) 70%,
+        transparent 100%
+      );
+      background-size: 280% 100%;
+      background-position: -140% 0;
+      animation: shimmer 5s ease-in-out infinite;
+      z-index: 1;
+      border-radius: 50px;
+    }
+    @keyframes shimmer {
+      0%        { background-position: -140% 0; }
+      60%, 100% { background-position: 240% 0; }
+    }
+    .btn-join:hover {
+      transform: scale(1.12);
+      box-shadow: 0 0 40px rgba(168,85,247,.9), 0 0 80px rgba(217,70,239,.5);
+    }
+    .btn-join span { position: relative; z-index: 2; }
 
-    /* HERO */
+    /* ── HERO — perfectly centered ────────────── */
     .hero {
       flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: center;       /* horizontal center */
+      justify-content: center;   /* vertical center */
       text-align: center;
-      gap: clamp(16px, 2.5vh, 32px);
-      padding: 0 40px;
+      gap: 20px;
+      padding: 24px 40px 40px;
+      /* Override RTL text alignment issues */
+      direction: rtl;
     }
 
+    /* Hero logo wrapper — full width, flex center */
+    .hero-logo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
     .hero-logo img {
-      height: clamp(220px, 30vh, 400px);
-      filter: drop-shadow(0 0 32px rgba(168,85,247,.95));
-      margin-bottom: -10px; /* 🔥 closer to next element */
+      width: min(60vw, 620px);
+      height: auto;
+      mix-blend-mode: lighten;
+      filter: drop-shadow(0 0 30px rgba(168,85,247,.95))
+              drop-shadow(0 0 60px rgba(217,70,239,.45));
+      display: block;
+      margin: 0 auto;
     }
 
+    /* Divider */
     .hero-divider {
       width: 60px;
       height: 2px;
       background: linear-gradient(90deg, var(--purple), var(--magenta));
+      border-radius: 2px;
+      margin: 0 auto;
     }
 
+    /* Title */
     .hero-title {
-      font-size: clamp(1.6rem, 3.5vw, 3.2rem);
+      font-size: clamp(1.6rem, 3.5vw, 3rem);
       font-weight: 900;
-      margin-bottom: -6px; /* 🔥 tighter */
+      line-height: 1.2;
+      background: linear-gradient(135deg, #fff 30%, rgba(200,160,255,.85) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      width: 100%;
+      text-align: center;
     }
 
+    /* Subtitle */
     .hero-sub {
-      font-size: clamp(.95rem, 1.4vw, 1.3rem);
+      font-size: clamp(.95rem, 1.3vw, 1.2rem);
+      font-weight: 700;
       color: rgba(255,255,255,.72);
-      line-height: 1.8;
-      max-width: 600px;
-      margin-top: -10px; /* 🔥 THIS is the main fix */
+      line-height: 1.85;
+      max-width: 580px;
+      text-align: center;
+      margin: 0 auto;
     }
 
+    /* ── MOBILE ───────────────────────────────── */
+    @media (max-width: 768px) {
+
+      nav {
+        flex-direction: column;
+        align-items: center;
+        padding: 14px 20px 12px;
+        gap: 12px;
+      }
+
+      .logo img { height: 48px; }
+
+      .nav-left {
+        width: 100%;
+        justify-content: center;
+        flex-direction: row;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links {
+        gap: 16px;
+        justify-content: center;
+      }
+
+      .nav-links a { font-size: .95rem; }
+
+      .btn-join { padding: 9px 22px; font-size: .92rem; }
+
+      .hero {
+        gap: 16px;
+        padding: 20px 20px 32px;
+      }
+
+      .hero-logo img { width: min(85vw, 360px); }
+
+      .hero-title { font-size: clamp(1.3rem, 5.5vw, 1.9rem); }
+
+      .hero-sub {
+        font-size: clamp(.88rem, 3.5vw, 1rem);
+        line-height: 1.7;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .nav-links a { font-size: .82rem; }
+      .nav-links { gap: 10px; }
+      .logo img { height: 40px; }
+      .btn-join { padding: 8px 16px; font-size: .85rem; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- Spline 3D background -->
   <div class="spline-bg">
-    <iframe src="https://my.spline.design/3dpathslines1copycopy-Y9XbL7clL8pevKge7dpVsQX3/"></iframe>
+    <iframe
+      src="https://my.spline.design/3dpathslines1copycopy-Y9XbL7clL8pevKge7dpVsQX3/"
+      frameborder="0"
+      width="100%"
+      height="100%"
+      allow="autoplay; fullscreen"
+      scrolling="no"
+    ></iframe>
   </div>
 
   <div class="page">
 
+    <!-- NAV: logo right, button+links left (RTL) -->
     <nav>
       <div class="logo">
-        <img src="logo.png" />
+        <img src="lesgo.png" alt="PlatX Logo" />
       </div>
-
       <div class="nav-left">
-        <button class="btn-join">انضم الينا</button>
-
+        <button class="btn-join"><span>انضم الينا</span></button>
         <ul class="nav-links">
           <li><a href="#">فعاليات</a></li>
           <li><a href="#">اقتراحات</a></li>
@@ -158,22 +311,17 @@
       </div>
     </nav>
 
-    <!-- HERO — centered, no card -->
+    <!-- HERO: everything centered -->
     <section class="hero">
-
       <div class="hero-logo">
-        <img src="logo.png" alt="PlatX" />
+        <img src="lesgo.png" alt="PlatX" />
       </div>
-
       <div class="hero-divider"></div>
-
       <h1 class="hero-title">مجتمع اللاعبين العرب</h1>
-
       <p class="hero-sub">
         يلتقي فيه عشاق الألعاب ليعيشوا لحظات ممتعة،<br>
         يبنون صداقات حقيقية ويصنعون ذكريات تبقى للأبد.
       </p>
-
     </section>
 
   </div>
