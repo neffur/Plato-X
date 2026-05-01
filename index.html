@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>PlatàX – مجتمع اللاعبين العرب</title>
+  <title>PlatoX – مجتمع اللاعبين العرب</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,15 +27,7 @@
       color: #fff;
     }
 
-    /* ── Spline BG ─────────────────────────────── */
-    /*
-      KEY FIXES FOR SMOOTHNESS:
-      1. will-change: transform → tells browser to promote this to its own GPU layer
-      2. transform: translate3d(0,0,0) → forces GPU compositing (hardware acceleration)
-      3. backface-visibility: hidden → prevents flicker during compositing
-      4. contain: strict → isolates layout/paint, stops the iframe from triggering repaints on the rest of the page
-      5. isolation: isolate → creates a new stacking context, reduces paint overlap artifacts
-    */
+   
     .spline-bg {
       position: fixed;
       top: 0; left: 0;
