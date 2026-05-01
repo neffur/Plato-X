@@ -28,18 +28,78 @@
     }
 
     /* ── Spline BG ─────────────────────────────── */
+    /*
+      KEY FIXES FOR SMOOTHNESS:
+      1. will-change: transform → tells browser to promote this to its own GPU layer
+      2. transform: translate3d(0,0,0) → forces GPU compositing (hardware acceleration)
+      3. backface-visibility: hidden → prevents flicker during compositing
+      4. contain: strict → isolates layout/paint, stops the iframe from triggering repaints on the rest of the page
+      5. isolation: isolate → creates a new stacking context, reduces paint overlap artifacts
+    */
     .spline-bg {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
       z-index: 0;
       pointer-events: none;
-      transform: translateZ(0);
+
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      contain: strict;
+      isolation: isolate;
     }
+
     .spline-bg iframe {
       width: 100%; height: 100%;
-      border: none; display: block;
-      transform: translateZ(0);
+      border: none;
+      display: block;
+
+      /* Same GPU layer hints on the iframe element itself */
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+
+      /* Start invisible — fades in once loaded to avoid the white flash/glitch */
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    /* When iframe has loaded, JS adds this class to fade it in smoothly */
+    .spline-bg iframe.loaded {
+      opacity: 1;
+    }
+
+    /* ── Loading pulse (shown while Spline loads) ── */
+    .spline-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: radial-gradient(ellipse at 60% 40%, #1a0033 0%, #000 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 1s ease 0.3s;
+      pointer-events: none;
+    }
+
+    .spline-loader.hidden {
+      opacity: 0;
+    }
+
+    .loader-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid rgba(168, 85, 247, 0.2);
+      border-top-color: var(--purple);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     /* ── Page ─────────────────────────────────── */
@@ -50,6 +110,11 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      /*
+        isolation: isolate keeps the page content on its own compositing layer
+        so it doesn't repaint when the Spline iframe animates beneath it
+      */
+      isolation: isolate;
     }
 
     /* ── NAV ──────────────────────────────────── */
@@ -59,11 +124,20 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px 40px;
-      background: rgba(0,0,0,0.2);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.07);
+      /*
+        Use a solid-ish background instead of heavy backdrop-filter blur —
+        backdrop-filter is a GPU-expensive property that can cause stuttering
+        when combined with an animated iframe below it.
+        We fake the frosted look with a semi-transparent bg + very light blur.
+      */
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
       flex-shrink: 0;
+      /* Keep nav on its own layer so Spline repaints don't hit it */
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     /* Logo — right side in RTL */
@@ -71,15 +145,13 @@
       height: 60px;
       display: block;
       mix-blend-mode: lighten;
-      filter: drop-shadow(0 0 14px rgba(168,85,247,.8));
+      filter: drop-shadow(0 0 14px rgba(168, 85, 247, .8));
     }
 
-    /* Button + links — left side in RTL */
     .nav-left {
       display: flex;
       align-items: center;
       gap: 28px;
-      /* row-reverse so button is visually leftmost */
       flex-direction: row-reverse;
     }
 
@@ -88,8 +160,9 @@
       gap: 32px;
       list-style: none;
     }
+
     .nav-links a {
-      color: rgba(255,255,255,.85);
+      color: rgba(255, 255, 255, .85);
       text-decoration: none;
       font-size: 1.05rem;
       font-weight: 700;
@@ -97,6 +170,7 @@
       position: relative;
       transition: color .25s;
     }
+
     .nav-links a::after {
       content: '';
       position: absolute;
@@ -105,6 +179,7 @@
       background: linear-gradient(90deg, var(--purple), var(--magenta));
       transition: width .3s ease;
     }
+
     .nav-links a:hover { color: #fff; }
     .nav-links a:hover::after { width: 100%; }
 
@@ -126,9 +201,12 @@
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      transition: transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s ease;
-      box-shadow: 0 0 22px rgba(168,85,247,.5);
+      transition: transform .4s cubic-bezier(.34, 1.56, .64, 1), box-shadow .4s ease;
+      box-shadow: 0 0 22px rgba(168, 85, 247, .5);
+      /* Promote button to its own layer to keep hover animations smooth */
+      will-change: transform;
     }
+
     .btn-join::before {
       content: '';
       position: absolute;
@@ -136,7 +214,7 @@
       background: linear-gradient(135deg, var(--purple) 0%, var(--magenta) 100%);
       z-index: 0;
     }
-    /* Silver shimmer */
+
     .btn-join::after {
       content: '';
       position: absolute;
@@ -144,11 +222,11 @@
       background: linear-gradient(
         110deg,
         transparent 0%,
-        rgba(255,255,255,0) 30%,
-        rgba(230,215,255,.9) 46%,
-        rgba(255,255,255,1) 52%,
-        rgba(230,215,255,.9) 58%,
-        rgba(255,255,255,0) 70%,
+        rgba(255, 255, 255, 0) 30%,
+        rgba(230, 215, 255, .9) 46%,
+        rgba(255, 255, 255, 1) 52%,
+        rgba(230, 215, 255, .9) 58%,
+        rgba(255, 255, 255, 0) 70%,
         transparent 100%
       );
       background-size: 280% 100%;
@@ -157,58 +235,64 @@
       z-index: 1;
       border-radius: 50px;
     }
+
     @keyframes shimmer {
       0%        { background-position: -140% 0; }
       60%, 100% { background-position: 240% 0; }
     }
+
     .btn-join:hover {
       transform: scale(1.12);
-      box-shadow: 0 0 40px rgba(168,85,247,.9), 0 0 80px rgba(217,70,239,.5);
+      box-shadow: 0 0 40px rgba(168, 85, 247, .9), 0 0 80px rgba(217, 70, 239, .5);
     }
+
     .btn-join span { position: relative; z-index: 2; }
 
-    /* ── HERO — perfectly centered ────────────── */
+    /* ── HERO ─────────────────────────────────── */
     .hero {
       flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;       /* horizontal center */
-      justify-content: center;   /* vertical center */
+      align-items: center;
+      justify-content: center;
       text-align: center;
       gap: 20px;
       padding: 24px 40px 40px;
-      /* Override RTL text alignment issues */
       direction: rtl;
     }
-    .hero-logo img {
-  animation: bounce 5s ease-in-out infinite;
-}
 
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      30%       { transform: translateY(-18px); }
-      60%       { transform: translateY(-8px); }
-      80%       { transform: translateY(-14px); }
-      }
-
-    /* Hero logo wrapper — full width, flex center */
     .hero-logo {
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
     }
+
     .hero-logo img {
       width: min(60vw, 620px);
       height: auto;
       mix-blend-mode: lighten;
-      filter: drop-shadow(0 0 30px rgba(168,85,247,.95))
-              drop-shadow(0 0 60px rgba(217,70,239,.45));
+      filter: drop-shadow(0 0 30px rgba(168, 85, 247, .95))
+              drop-shadow(0 0 60px rgba(217, 70, 239, .45));
       display: block;
       margin: 0 auto;
+      /*
+        Use transform for the bounce animation, NOT top/margin-top.
+        transform is composited on the GPU and doesn't trigger layout reflow,
+        making the animation buttery smooth even with the Spline bg running.
+      */
+      animation: bounce 5s ease-in-out infinite;
+      /* Keeps the element on its own compositing layer during animation */
+      will-change: transform;
     }
 
-    /* Divider */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      30%       { transform: translateY(-18px); }
+      60%       { transform: translateY(-8px); }
+      80%       { transform: translateY(-14px); }
+    }
+
     .hero-divider {
       width: 60px;
       height: 2px;
@@ -217,12 +301,11 @@
       margin: 0 auto;
     }
 
-    /* Title */
     .hero-title {
       font-size: clamp(1.6rem, 3.5vw, 3rem);
       font-weight: 900;
       line-height: 1.2;
-      background: linear-gradient(135deg, #fff 30%, rgba(200,160,255,.85) 100%);
+      background: linear-gradient(135deg, #fff 30%, rgba(200, 160, 255, .85) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -230,11 +313,10 @@
       text-align: center;
     }
 
-    /* Subtitle */
     .hero-sub {
       font-size: clamp(.95rem, 1.3vw, 1.2rem);
       font-weight: 700;
-      color: rgba(255,255,255,.72);
+      color: rgba(255, 255, 255, .72);
       line-height: 1.85;
       max-width: 580px;
       text-align: center;
@@ -243,7 +325,6 @@
 
     /* ── MOBILE ───────────────────────────────── */
     @media (max-width: 768px) {
-
       nav {
         flex-direction: column;
         align-items: center;
@@ -267,7 +348,6 @@
       }
 
       .nav-links a { font-size: .95rem; }
-
       .btn-join { padding: 9px 22px; font-size: .92rem; }
 
       .hero {
@@ -276,12 +356,26 @@
       }
 
       .hero-logo img { width: min(85vw, 360px); }
-
       .hero-title { font-size: clamp(1.3rem, 5.5vw, 1.9rem); }
 
       .hero-sub {
         font-size: clamp(.88rem, 3.5vw, 1rem);
         line-height: 1.7;
+      }
+
+      /*
+        On mobile, backdrop-filter is especially expensive.
+        Drop it entirely on weaker devices.
+      */
+      @media (prefers-reduced-motion: reduce) {
+        nav {
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          background: rgba(0, 0, 0, 0.6);
+        }
+        .hero-logo img {
+          animation: none;
+        }
       }
     }
 
@@ -291,19 +385,42 @@
       .logo img { height: 40px; }
       .btn-join { padding: 8px 16px; font-size: .85rem; }
     }
+
+    /* Respect users who prefer less motion */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-logo img { animation: none; }
+      .btn-join::after { animation: none; }
+      .loader-ring { animation: none; border-top-color: var(--purple); }
+    }
   </style>
 </head>
 <body>
 
+  <!-- Loading screen shown while Spline iframe initialises -->
+  <div class="spline-loader" id="splineLoader">
+    <div class="loader-ring"></div>
+  </div>
+
   <!-- Spline 3D background -->
   <div class="spline-bg">
+    <!--
+      KEY IFRAME OPTIMISATIONS:
+      - loading="eager"            → starts fetching immediately (no lazy-load delay)
+      - importance="high"          → browser prioritises this network request
+      - allow="autoplay; fullscreen" → lets Spline run its WebGL loop unthrottled
+      - We do NOT set scrolling="no" — it's deprecated and can trigger extra repaints
+      - The onload JS fades the iframe in and removes the loader once Spline is ready
+    -->
     <iframe
+      id="splineFrame"
       src="https://my.spline.design/3dpathslines1copycopy-Y9XbL7clL8pevKge7dpVsQX3/"
       frameborder="0"
       width="100%"
       height="100%"
+      loading="eager"
+      importance="high"
       allow="autoplay; fullscreen"
-      scrolling="no"
+      onload="handleSplineLoad()"
     ></iframe>
   </div>
 
@@ -338,6 +455,47 @@
     </section>
 
   </div>
+
+  <script>
+    /*
+      Smooth iframe reveal once Spline finishes loading.
+      This prevents the white-flash glitch caused by the iframe
+      becoming visible before WebGL has painted its first frame.
+    */
+    function handleSplineLoad() {
+      var frame = document.getElementById('splineFrame');
+      var loader = document.getElementById('splineLoader');
+
+      /*
+        Small delay lets Spline's WebGL context actually render its first frame
+        before we reveal it — avoids the brief black/white flicker.
+      */
+      setTimeout(function () {
+        frame.classList.add('loaded');
+        loader.classList.add('hidden');
+
+        /* Remove loader from DOM after its fade-out transition finishes */
+        setTimeout(function () {
+          loader.remove();
+        }, 1400);
+      }, 300);
+    }
+
+    /*
+      Fallback: if the iframe fires no load event within 8 seconds
+      (e.g. the Spline URL is slow), hide the loader anyway so
+      the page isn't stuck on a spinner.
+    */
+    setTimeout(function () {
+      var loader = document.getElementById('splineLoader');
+      var frame  = document.getElementById('splineFrame');
+      if (loader) {
+        frame.classList.add('loaded');
+        loader.classList.add('hidden');
+        setTimeout(function () { loader.remove(); }, 1400);
+      }
+    }, 8000);
+  </script>
 
 </body>
 </html>
